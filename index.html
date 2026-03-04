@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokédex — Field Guide</title>
+  <meta name="description" content="A minimal Pokédex. Search any Pokémon and explore their data." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Dynamic background orb -->
+  <div class="bg-orb" id="bgOrb"></div>
+  <div class="bg-grain"></div>
+
+  <!-- ── HEADER ── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="wordmark">
+        <span class="wordmark-num">Nº</span>
+        <span class="wordmark-title">Pokédex</span>
+        <span class="wordmark-sub">Field Guide</span>
+      </div>
+      <div class="header-right">
+        <button class="btn-random" id="btnRandom" title="Random Pokémon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2"/><path d="M22 18h-5.9c-1.3 0-2.5-.6-3.3-1.7l-.5-.8"/><path d="m18 14 4 4-4 4"/></svg>
+          Random
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── SEARCH ── -->
+  <section class="search-section">
+    <form class="search-form" id="searchForm" autocomplete="off">
+      <div class="search-wrap">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Enter name or number…"
+          spellcheck="false"
+        />
+        <button type="submit" class="search-btn" id="searchBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+      </div>
+    </form>
+
+    <!-- Recent searches -->
+    <div class="recents" id="recents"></div>
+  </section>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="main" id="main">
+
+    <!-- Empty / welcome state -->
+    <div class="welcome-state" id="welcomeState">
+      <div class="welcome-pokeball">
+        <div class="pokeball">
+          <div class="pokeball-top"></div>
+          <div class="pokeball-mid"></div>
+          <div class="pokeball-bot"></div>
+          <div class="pokeball-btn"></div>
+        </div>
+      </div>
+      <p class="welcome-hint">Search any Pokémon by name or National Pokédex number</p>
+      <div class="starter-row">
+        <button class="starter-chip" data-name="bulbasaur">Bulbasaur</button>
+        <button class="starter-chip" data-name="charmander">Charmander</button>
+        <button class="starter-chip" data-name="squirtle">Squirtle</button>
+        <button class="starter-chip" data-name="pikachu">Pikachu</button>
+        <button class="starter-chip" data-name="eevee">Eevee</button>
+        <button class="starter-chip" data-name="mewtwo">Mewtwo</button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading-state" id="loadingState" aria-live="polite">
+      <div class="loader">
+        <div class="loader-ring"></div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div class="error-state" id="errorState">
+      <div class="error-icon">?</div>
+      <h3 class="error-title">Not found in the Pokédex</h3>
+      <p class="error-msg" id="errorMsg">Check the name or number and try again.</p>
+    </div>
+
+    <!-- Pokémon card -->
+    <article class="poke-card" id="pokeCard" aria-live="polite">
+
+      <div class="poke-left">
+        <div class="poke-number" id="pokeNumber">#001</div>
+        <div class="poke-artwork-wrap">
+          <img class="poke-artwork" id="pokeArtwork" alt="" loading="eager" />
+          <div class="poke-artwork-shadow"></div>
+        </div>
+        <div class="poke-types" id="pokeTypes"></div>
+      </div>
+
+      <div class="poke-right">
+
+        <div class="poke-name-block">
+          <h1 class="poke-name" id="pokeName">—</h1>
+          <div class="poke-genus" id="pokeGenus"></div>
+        </div>
+
+        <p class="poke-flavor" id="pokeFlavor"></p>
+
+        <div class="poke-metrics">
+          <div class="metric">
+            <span class="metric-val" id="pokeHeight">—</span>
+            <span class="metric-key">Height</span>
+          </div>
+          <div class="metric-div"></div>
+          <div class="metric">
+            <span class="metric-val" id="pokeWeight">—</span>
+            <span class="metric-key">Weight</span>
+          </div>
+          <div class="metric-div"></div>
+          <div class="metric">
+            <span class="metric-val" id="pokeExp">—</span>
+            <span class="metric-key">Base XP</span>
+          </div>
+        </div>
+
+        <div class="poke-section">
+          <div class="section-label">Abilities</div>
+          <div class="abilities-row" id="pokeAbilities"></div>
+        </div>
+
+        <div class="poke-section">
+          <div class="section-label">Base Stats</div>
+          <div class="stats-list" id="pokeStats"></div>
+        </div>
+
+        <div class="poke-section">
+          <div class="section-label">Moves <span class="moves-note">(first 12)</span></div>
+          <div class="moves-wrap" id="pokeMoves"></div>
+        </div>
+
+      </div>
+    </article>
+
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      Data from <a href="https://pokeapi.co" target="_blank" rel="noopener">PokéAPI</a> · Artwork © The Pokémon Company
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
