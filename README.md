@@ -1,202 +1,115 @@
-# 🔴 POKEDATA ⚪
-### La Pokédex que carga más rápido que un Electrode
+<div align="center">
 
-<p align="center">
-  <a href="https://mikedmart.github.io/PokeData/">
-    <img src="https://img.shields.io/badge/👉_ATRAPA_TODOS_👈-PokeData-ff0000?style=for-the-badge&logo=pokemon&logoColor=white&labelColor=black" width="100%">
-  </a>
-</p>
+<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png" width="120" alt="Venusaur" />
 
----
+# Pokédex — Field Guide
 
-## 🎯 ¿QUÉ ES?
-╔════════════════════════════════════╗
-║ ║
-║ 🔍 BUSCA cualquier Pokémon ║
-║ 📊 ESTADÍSTICAS base al instante ║
-║ 🎯 HABILIDADES y movimientos ║
-║ ⚡ DATOS clave en 1 clic ║
-║ 🧹 SIN publicidad · SIN registro ║
-║ ║
-╚════════════════════════════════════╝
+**A cinematic, editorial-style Pokédex built with vanilla HTML, CSS & JS**
 
-text
-
-**PokeData** es una Pokédex web **minimalista y ultra rápida**.  
-Escribe un nombre o número y obtén **todo lo que necesitas** sin distracciones.
+[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-mikedmart.github.io-4caf50?style=for-the-badge)](https://mikedmart.github.io/PokeData/)
+[![PokéAPI](https://img.shields.io/badge/Data-PokéAPI-ef5350?style=for-the-badge)](https://pokeapi.co)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
 ---
 
-## ⚡ EN 2 SEGUNDOS
-┌─────────────────────────────────────┐
-│ │
-│ [ PIKACHU ] → 🔍 │
-│ │
-│ ─────────────────────────────── │
-│ │
-│ #025 │
-│ Altura: 0.4 m · Peso: 6.0 kg │
-│ XP base: 112 │
-│ │
-│ Habilidades: │
-│ • Static · Lightning Rod │
-│ │
-│ Stats: │
-│ HP ███████░░░ 35 │
-│ Atk ████████░░ 55 │
-│ Def ███████░░░ 40 │
-│ SpA ██████████░░ 50 │
-│ SpD ████████░░ 50 │
-│ Spe █████████░░ 90 │
-│ │
-└─────────────────────────────────────┘
+</div>
 
-text
+## ✨ Features
+
+| Feature | Details |
+|---|---|
+| 🎭 **Cinematic Pokéball Transition** | Custom CSS/JS animation — Pokémon shrinks into the ball, ball shakes 2× with particles, new Pokémon bursts out |
+| 🌗 **Dark / Light Mode** | Persists across sessions via localStorage |
+| 🎨 **Dynamic Type Theming** | Background, accent color, and stat bars all adapt to the Pokémon's primary type |
+| ✦ **Shiny Toggle** | Switch between normal and shiny official artwork |
+| 🕹️ **Animated Gen-V Sprites** | Pixel-art GIF badge showing the Pokémon in motion |
+| 🔊 **Pokémon Cries** | Plays the official cry from the API on each load |
+| 🎵 **8-bit Chiptune** | Ambient music generated with the Web Audio API (no files needed) |
+| 🔇 **Mute Toggle** | Silences all audio, persists across sessions |
+| 🔀 **Random** | Loads any of the 1,025 Pokémon instantly |
+| 🕐 **Recent History** | Last 10 Pokémon remembered across sessions |
+| 📐 **Viewport-Fit Layout** | No page scroll — content fits the screen at any size |
 
 ---
 
-## 📊 ¿QUÉ ENCUENTRAS?
+## 🖼️ Preview
 
-| Dato | Para qué sirve |
-|------|----------------|
-| 🆔 **Nº Pokédex** | Saber su lugar en la región |
-| 📏 **Altura/Peso** | Contexto físico del bicho |
-| ⚡ **XP base** | Qué tan rápido sube de nivel |
-| 🧠 **Habilidades** | Pasivas que puede tener |
-| 📈 **Stats base** | Dónde pega fuerte (o débil) |
-| 🎬 **Movimientos** | Los 12 más representativos |
+> Search any Pokémon by name or National Pokédex number.
+> The page adapts its color palette, plays the cry, and transitions via a custom pokéball animation.
 
----
-
-## 🛠️ STACK TÉCNICO (para los curiosos)
-┌──────────────────────────────┐
-│ 🧱 Frontend │
-│ ├── HTML5 + CSS3 │
-│ ├── JavaScript (vanilla) │
-│ └── Fetch API │
-│ │
-│ 🌐 Datos │
-│ └── PokéAPI (REST) │
-│ │
-│ 🚀 Despliegue │
-│ └── GitHub Pages │
-└──────────────────────────────┘
-
-text
-
-✅ **Sin frameworks** → Liviano como un Gastly  
-✅ **Sin dependencias** → Menos cosas que puedan fallar  
-✅ **Responsive** → Funca en la PC y en el celu
+```
+Pikachu → Electric yellow theme
+Gengar  → Ghost purple theme  
+Charizard → Fire red theme
+```
 
 ---
 
-## 🚀 CÓMO USAR
-1️⃣ ABRE → https://mikedmart.github.io/PokeData/
+## 🛠️ Tech Stack
 
-2️⃣ ESCRIBE → Nombre del Pokémon (ej: "charizard")
-O su número (ej: "6")
+**Zero dependencies. No frameworks. No build step.**
 
-3️⃣ ¡LISTO! → Aparecen todos sus datos al instante
-
-text
-
-**Tips pro:**
-- 🔤 Funciona con **mayúsculas/minúsculas** (no importa)
-- 🔢 Del #1 al #1025 (¡todos!)
-- ⚡ Es más rápido que un **Extreme Speed**
+- **HTML5** — semantic markup, single-page structure
+- **CSS3** — CSS custom properties, Grid, viewport units, keyframe animations
+- **Vanilla JS** — async/await, Fetch API, Canvas API for particles
+- **Web Audio API** — Pokémon cries decoded from audio buffers + procedural chiptune
+- **PokéAPI** — REST API for all Pokémon data, sprites, cries and species info
+- **GitHub Pages** — deployed via CI/CD on every push to `main`
 
 ---
 
-## 💥 ¿POR QUÉ OTRA POKÉDEX?
+## 🚀 Run Locally
 
-Porque la mayoría:
-❌ Tienen mil anuncios  
-❌ Tardan una eternidad en cargar  
-❌ Piden registro o cosas raras  
+```bash
+# Clone
+git clone https://github.com/MikeDMart/PokeData.git
+cd PokeData
 
-**PokeData es:**
-✅ Rápida  
-✅ Limpia  
-✅ Directa  
-✅ Gratis  
-✅ Sin vueltas  
+# Serve (any static server works)
+npx serve .
+# → open http://localhost:3000
+```
 
----
-
-## 🖼️ LO QUE VERÁS
-╔════════════════════════════╗
-║ [ BULBASAUR ] → 🔍 ║
-╠════════════════════════════╣
-║ ║
-║ #001 · Grass/Poison ║
-║ ║
-║ 0.7m 6.9kg ║
-║ XP base: 64 ║
-║ ║
-║ Habilidades: ║
-║ • Overgrow ║
-║ • Chlorophyll (oculta) ║
-║ ║
-║ Stats: ║
-║ HP █████░░░░░ 45 ║
-║ Atk ███████░░░ 49 ║
-║ Def ███████░░░ 49 ║
-║ SpA ▕████████░░ 65 ║
-║ SpD █████████░░ 65 ║
-║ Spe ███████░░░ 45 ║
-║ ║
-║ Movimientos top: ║
-║ • Tackle · Growl ║
-║ • Vine Whip · PoisonPowder║
-║ • Razor Leaf · etc... ║
-║ ║
-╚════════════════════════════╝
-
-text
+Or open in GitHub Codespaces — zero setup required.
 
 ---
 
-## 🤝 ¿QUERÉS AYUDAR?
+## 📁 Structure
 
-El proyecto es **open source** (obvio).
-🍴 Forkealo
-🌱 Mejoralo
-📬 Mandá PR
-⭐ Dale estrella si te gustó
-
-text
-
-**Ideas para contribuir:**
-- ✨ Mostrar sprite del Pokémon
-- 🌙 Modo oscuro
-- 🔄 Comparar dos Pokémon
-- 📱 Mejoras mobile
+```
+PokeData/
+├── index.html   # Single-page app shell
+├── style.css    # All styles — layout, animations, themes
+└── app.js       # All logic — API, animations, audio, state
+```
 
 ---
 
-## 💬 EL DATO CURIOSO
+## 🎮 Keyboard Shortcuts
 
-Este proyecto carga datos de **PokéAPI**, la base de datos de Pokémon más grande y gratuita que existe.  
-Más de **1000 especies**, 18 tipos, cientos de habilidades... todo en tiempo real.
+| Key | Action |
+|---|---|
+| `/` | Focus search |
+| `Escape` | Blur search |
 
 ---
 
-<p align="center">
-  <samp>
-    <strong>Hecho por un entrenador, para entrenadores ⚡</strong>
-    <br>
-    <sub>by <a href="https://github.com/mikedmart">@mikedmart</a> · código abierto · data via PokéAPI</sub>
-  </samp>
-</p>
+## 📡 API Used
 
-<p align="center">
-  <a href="https://mikedmart.github.io/PokeData/">
-    <img src="https://img.shields.io/badge/👉_BUSCAR_POKÉMON_👈-ff0000?style=for-the-badge&logo=pokemon&logoColor=white&labelColor=black" width="100%">
-  </a>
-</p>
+All data comes from **[PokéAPI](https://pokeapi.co)** — a free, open REST API with no authentication required.
 
-<p align="center">
-  <a href="https://mikedmart.github.io/Punto-Electrico-CR/">
-    <img src="https://img.shields.io/badge/⚡_También_visitá_Punto_Eléctrico_CR-00aa00?style=social" width="80%">
-  </a>
-</p>
+Endpoints used:
+- `GET /api/v2/pokemon/{name}` — stats, sprites, types, abilities, moves, cries
+- `GET /api/v2/pokemon-species/{name}` — flavor text, genus
+
+---
+
+<div align="center">
+
+Made with ♥ by [MikeDMart](https://github.com/MikeDMart)
+
+Data from [PokéAPI](https://pokeapi.co) · Artwork © The Pokémon Company
+
+</div>
