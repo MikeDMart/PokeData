@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    POKÉDEX FIELD GUIDE — app.js
-   Cinematic pokéball capture & release transition (ACORTADA)
+   Dark mode · Sound (cry + chiptune) · Shiny · Animated sprite
+   Simplified pokéball · Viewport-fit layout
    ═══════════════════════════════════════════════════════════════ */
 
 const TYPE_COLORS = {
@@ -24,358 +25,460 @@ const TYPE_COLORS = {
   fairy:    { hex: '#d81b60', rgb: '216,27,96' },
 };
 
-const TYPE_BG_COLORS = {
+const TYPE_BG = {
   normal:'#fafafa', fire:'#fff8f7', water:'#f5f9ff', electric:'#fffde7',
   grass:'#f5fbf5', ice:'#f0fbfd', fighting:'#fff5f5', poison:'#fdf5ff',
   ground:'#fffbf0', flying:'#f5f7ff', psychic:'#fff5fb', bug:'#f8fdf0',
   rock:'#faf7f5', ghost:'#f8f5ff', dragon:'#f5f8ff', dark:'#f5f6f7',
   steel:'#f5f7f8', fairy:'#fff5f9',
 };
-
-const STAT_LABELS = {
-  hp:'HP', attack:'ATK', defense:'DEF',
-  'special-attack':'SP.ATK', 'special-defense':'SP.DEF', speed:'SPD',
+const TYPE_BG_DARK = {
+  normal:'#18181a', fire:'#1a1210', water:'#101420', electric:'#1a1800',
+  grass:'#101a10', ice:'#101820', fighting:'#1a1010', poison:'#180010',
+  ground:'#1a1600', flying:'#101218', psychic:'#1a1018', bug:'#121a10',
+  rock:'#181410', ghost:'#120f1a', dragon:'#10121a', dark:'#121416',
+  steel:'#121416', fairy:'#1a1018',
 };
+
+const STAT_LABELS = { hp:'HP', attack:'ATK', defense:'DEF', 'special-attack':'SP.ATK', 'special-defense':'SP.DEF', speed:'SPD' };
 const STAT_MAX = 255;
 
 const state = {
   current: null,
+  currentData: null,
   recents: JSON.parse(localStorage.getItem('pd_recents') || '[]'),
   isFirstLoad: true,
+  isShiny: false,
+  muted: JSON.parse(localStorage.getItem('pd_muted') || 'false'),
+  theme: localStorage.getItem('pd_theme') || 'light',
 };
 
 const $ = id => document.getElementById(id);
 const show = el => el.classList.add('active');
 const hide = el => el.classList.remove('active');
-const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1).replace(/-/g, ' ');
+const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
 const delay = ms => new Promise(r => setTimeout(r, ms));
 const padId = n => '#' + String(n).padStart(3, '0');
 const formatHeight = dm => (dm / 10).toFixed(1) + ' m';
 const formatWeight = hg => (hg / 10).toFixed(1) + ' kg';
 
 /* ═══════════════════════════════════════════════════
-   CINEMATIC POKÉBALL SYSTEM (ACORTADO)
+   THEME
    ═══════════════════════════════════════════════════ */
-
-function buildOverlay() {
-  if ($('pb-overlay')) return;
-  const el = document.createElement('div');
-  el.id = 'pb-overlay';
-  el.innerHTML = `
-    <div class="pb-scene">
-      <canvas class="pb-canvas" id="pbCanvas"></canvas>
-      <div class="pb-ball" id="pbBall">
-        <div class="pb-half pb-half--top">
-          <div class="pb-shine"></div>
-        </div>
-        <div class="pb-seam">
-          <div class="pb-button">
-            <div class="pb-button-ring"></div>
-            <div class="pb-button-core" id="pbCore"></div>
-          </div>
-        </div>
-        <div class="pb-half pb-half--bot"></div>
-      </div>
-      <div class="pb-flash" id="pbFlash"></div>
-    </div>
-  `;
-  document.body.appendChild(el);
-}
-
-/* ── Particle system ── */
-function spawnParticles(color, mode) {
-  const canvas = $('pbCanvas');
-  if (!canvas) return () => {};
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  const particles = [];
-  const count = mode === 'capture' ? 28 : 40;
-
-  for (let i = 0; i < count; i++) {
-    const angle = (Math.PI * 2 / count) * i + (Math.random() - .5) * .5;
-    const dist = mode === 'capture' ? 180 + Math.random() * 100 : 20;
-    const speed = mode === 'capture' ? -(3 + Math.random() * 5) : (4 + Math.random() * 8);
-    particles.push({
-      x: cx + Math.cos(angle) * dist,
-      y: cy + Math.sin(angle) * dist,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      size: 4 + Math.random() * 6,
-      alpha: 1,
-      color,
-      trail: [],
-    });
-  }
-
-  let frame;
-  function tick() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let alive = false;
-    particles.forEach(p => {
-      p.trail.push({ x: p.x, y: p.y });
-      if (p.trail.length > 6) p.trail.shift();
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vx *= .92;
-      p.vy *= .92;
-      p.alpha -= .03;
-      if (p.alpha > 0) {
-        alive = true;
-        // Draw trail
-        p.trail.forEach((pt, i) => {
-          ctx.save();
-          ctx.globalAlpha = p.alpha * (i / p.trail.length) * .4;
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, p.size * (i / p.trail.length), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        });
-        // Draw particle
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 16;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    });
-    if (alive) frame = requestAnimationFrame(tick);
-  }
-  tick();
-  return () => cancelAnimationFrame(frame);
-}
-
-/* ── Capture ACORTADO: artwork flies INTO the ball (350ms total) ── */
-async function animateCapture(accentColor) {
-  buildOverlay();
-  const overlay = $('pb-overlay');
-  const ball = $('pbBall');
-  const core = $('pbCore');
-  const flash = $('pbFlash');
-  const artwork = $('pokeArtwork');
-
-  const artRect = artwork.getBoundingClientRect();
-  const scCX = window.innerWidth / 2;
-  const scCY = window.innerHeight / 2;
-
-  // Clone artwork as flying ghost
-  const ghost = document.createElement('img');
-  ghost.src = artwork.src;
-  ghost.id = 'pb-ghost';
-  ghost.style.cssText = `
-    position:fixed;z-index:10002;pointer-events:none;
-    width:${artRect.width}px;height:${artRect.height}px;
-    left:${artRect.left}px;top:${artRect.top}px;
-    object-fit:contain;will-change:transform,opacity;
-    filter:drop-shadow(0 0 0px ${accentColor});
-  `;
-  document.body.appendChild(ghost);
-
-  // Fade overlay in (más rápido)
-  overlay.classList.add('pb-show');
-  ball.className = 'pb-ball pb-ball--open';
-  await delay(40); // Reducido de 80ms
-
-  // Spawn inward particles
-  spawnParticles(accentColor, 'capture');
-
-  // Fly ghost into ball (más rápido)
-  const targetW = artRect.width * 0.15;
-  const targetH = artRect.height * 0.15;
-  ghost.style.transition = 'all 0.3s cubic-bezier(.55,.06,.68,.19)'; // Reducido de 0.5s
-  ghost.style.left = `${scCX - targetW / 2}px`;
-  ghost.style.top = `${scCY - targetH / 2 - 20}px`;
-  ghost.style.width = `${targetW}px`;
-  ghost.style.height = `${targetH}px`;
-  ghost.style.opacity = '0.5';
-  ghost.style.filter = `drop-shadow(0 0 24px ${accentColor}) brightness(2)`;
-
-  await delay(280); // Reducido de 460ms
-
-  // Absorption flash (más rápido)
-  ghost.style.transition = 'all 0.05s ease-in'; // Reducido de 0.08s
-  ghost.style.opacity = '0';
-  ghost.style.transform = 'scale(0)';
-
-  flash.style.background = accentColor;
-  flash.classList.add('pb-flash--on');
-  await delay(50); // Reducido de 80ms
-  flash.classList.remove('pb-flash--on');
-  ghost.remove();
-
-  // Close ball
-  ball.className = 'pb-ball pb-ball--closed';
-  core.style.background = accentColor;
-  core.style.boxShadow = `0 0 20px 6px ${accentColor}, 0 0 40px 12px ${accentColor}44`;
-
-  await delay(150); // Reducido de 250ms
-
-  // 3 game-accurate shakes with pauses (acortados)
-  for (let i = 0; i < 3; i++) {
-    ball.classList.add('pb-ball--shake');
-    await delay(250); // Reducido de 550ms
-    ball.classList.remove('pb-ball--shake');
-    await delay(120); // Reducido de 300ms
-  }
-  // Duración total aproximada: 40+280+50+150+(250+120)*3 ≈ 1.3 segundos
-}
-
-/* ── Release ACORTADO: ball opens, Pokémon bursts out (650ms total) ── */
-async function animateRelease(accentColor) {
-  const ball = $('pbBall');
-  const flash = $('pbFlash');
-  const core = $('pbCore');
-  const overlay = $('pb-overlay');
-
-  // Core pulses white (más rápido)
-  core.style.transition = 'all 0.15s ease'; // Reducido de 0.2s
-  core.style.background = '#ffffff';
-  core.style.boxShadow = `0 0 30px 12px #ffffff`;
-  await delay(150); // Reducido de 220ms
-
-  // Ball bursts open
-  ball.className = 'pb-ball pb-ball--burst';
-
-  // Big type-colored flash
-  flash.style.background = `radial-gradient(circle at center, #ffffff 0%, ${accentColor} 45%, transparent 75%)`;
-  flash.classList.add('pb-flash--on');
-  spawnParticles(accentColor, 'release');
-
-  await delay(120); // Reducido de 200ms
-  flash.classList.remove('pb-flash--on');
-  await delay(150); // Reducido de 250ms
-
-  overlay.classList.remove('pb-show');
-  await delay(180); // Reducido de 350ms
-
-  // Reset
-  ball.className = 'pb-ball';
-  core.style.cssText = '';
-  // Duración total aproximada: 150+120+150+180 = 600ms
-}
-
-/* ═══════════════════════════════════════════════════
-   THEME (sin cambios)
-   ═══════════════════════════════════════════════════ */
-function applyTheme(primaryType) {
-  const color = TYPE_COLORS[primaryType] || TYPE_COLORS.normal;
-  const bgColor = TYPE_BG_COLORS[primaryType] || '#f5f0e8';
-  const root = document.documentElement;
-  root.style.setProperty('--accent', color.hex);
-  root.style.setProperty('--accent-rgb', color.rgb);
+function applyTypeTheme(primaryType) {
+  const color   = TYPE_COLORS[primaryType] || TYPE_COLORS.normal;
+  const isDark  = document.documentElement.dataset.theme === 'dark';
+  const bgMap   = isDark ? TYPE_BG_DARK : TYPE_BG;
+  const bgColor = bgMap[primaryType] || (isDark ? '#161310' : '#f5f0e8');
+  const root    = document.documentElement;
+  root.style.setProperty('--accent',      color.hex);
+  root.style.setProperty('--accent-rgb',  color.rgb);
   root.style.setProperty('--accent-soft', `rgba(${color.rgb},.09)`);
-  root.style.setProperty('--accent-mid', `rgba(${color.rgb},.2)`);
+  root.style.setProperty('--accent-mid',  `rgba(${color.rgb},.2)`);
   document.body.style.backgroundColor = bgColor;
-  $('bgOrb').style.background = `radial-gradient(circle, rgba(${color.rgb},.15) 0%, transparent 70%)`;
+  $('bgOrb').style.background = `radial-gradient(circle, rgba(${color.rgb},.12) 0%, transparent 70%)`;
 }
 
-/* ═══════════════════════════════════════════════════
-   API (sin cambios)
-   ═══════════════════════════════════════════════════ */
-async function fetchPokemon(nameOrId) {
-  const key = String(nameOrId).toLowerCase().trim();
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
-  if (!res.ok) throw new Error(`Not found: ${nameOrId}`);
-  return res.json();
+function setTheme(t) {
+  state.theme = t;
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('pd_theme', t);
+  // Re-apply bg color for dark/light
+  if (state.currentData) {
+    const type = state.currentData.types?.[0]?.type?.name || 'normal';
+    applyTypeTheme(type);
+  }
 }
 
-async function fetchSpecies(url) {
-  try { const r = await fetch(url); return r.ok ? r.json() : null; }
-  catch { return null; }
-}
-
-/* ═══════════════════════════════════════════════════
-   RECENTS (sin cambios)
-   ═══════════════════════════════════════════════════ */
-function addToRecents(name, id) {
-  state.recents = state.recents.filter(r => r.name !== name);
-  state.recents.unshift({ name, id });
-  if (state.recents.length > 8) state.recents = state.recents.slice(0, 8);
-  localStorage.setItem('pd_recents', JSON.stringify(state.recents));
-  renderRecents();
-}
-
-function renderRecents() {
-  const container = $('recents');
-  if (!state.recents.length) { container.innerHTML = ''; return; }
-  container.innerHTML = state.recents.map(r => `
-    <button class="recent-chip" data-name="${r.name}">
-      <span class="recent-chip-num">${padId(r.id)}</span>
-      ${capitalize(r.name)}
-    </button>
-  `).join('');
-  container.querySelectorAll('.recent-chip').forEach(chip => {
-    chip.addEventListener('click', () => loadPokemon(chip.dataset.name));
+function initTheme() {
+  setTheme(state.theme);
+  $('btnTheme').addEventListener('click', () => {
+    setTheme(state.theme === 'light' ? 'dark' : 'light');
   });
 }
 
 /* ═══════════════════════════════════════════════════
-   RENDER (sin cambios)
+   SOUND SYSTEM
+   ═══════════════════════════════════════════════════ */
+let audioCtx = null;
+let chiptuneNodes = [];
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+/* Play Pokémon cry from API */
+async function playCry(cryUrl) {
+  if (state.muted || !cryUrl) return;
+  const btn = $('btnCry');
+  try {
+    const ctx   = getAudioCtx();
+    const res   = await fetch(cryUrl);
+    const buf   = await res.arrayBuffer();
+    const audio = await ctx.decodeAudioData(buf);
+    const src   = ctx.createBufferSource();
+    src.buffer  = audio;
+    src.connect(ctx.destination);
+    src.start();
+    btn.classList.add('playing');
+    src.onended = () => btn.classList.remove('playing');
+  } catch (e) {
+    btn.classList.remove('playing');
+  }
+}
+
+/* 8-bit pentatonic chiptune — generated with Web Audio API */
+function startChiptune() {
+  if (state.muted || chiptuneNodes.length) return;
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+
+    // Pentatonic notes (C major penta)
+    const scale = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.26];
+    const pattern = [0,2,4,5,4,2,0,1,3,5,7,5,3,1,0,2];
+    let step = 0;
+    const bpm = 140;
+    const beatMs = (60 / bpm) * 1000;
+
+    function playNote() {
+      if (state.muted) { stopChiptune(); return; }
+      const ctx2 = getAudioCtx();
+      const freq  = scale[pattern[step % pattern.length]];
+      step++;
+
+      const osc  = ctx2.createOscillator();
+      const gain = ctx2.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(.04, ctx2.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx2.currentTime + .18);
+      osc.connect(gain);
+      gain.connect(ctx2.destination);
+      osc.start();
+      osc.stop(ctx2.currentTime + .2);
+      chiptuneNodes.push(osc);
+
+      chiptuneNodes = chiptuneNodes.filter(n => { try { return n.playbackState !== 3; } catch { return false; } });
+    }
+
+    // Play a note every beat
+    const interval = setInterval(() => {
+      if (state.muted) { clearInterval(interval); stopChiptune(); }
+      else playNote();
+    }, beatMs / 2);
+
+    chiptuneNodes.push({ _interval: interval }); // store interval ref
+  } catch (e) { /* AudioContext blocked */ }
+}
+
+function stopChiptune() {
+  chiptuneNodes.forEach(n => {
+    if (n._interval) clearInterval(n._interval);
+    else try { n.stop(); } catch {}
+  });
+  chiptuneNodes = [];
+}
+
+function setMute(muted) {
+  state.muted = muted;
+  localStorage.setItem('pd_muted', JSON.stringify(muted));
+  document.body.classList.toggle('muted', muted);
+  if (muted) stopChiptune();
+  else startChiptune();
+}
+
+function initSound() {
+  document.body.classList.toggle('muted', state.muted);
+  $('btnMute').addEventListener('click', () => setMute(!state.muted));
+  $('btnCry').addEventListener('click', () => {
+    const url = state.currentData?.cries?.latest;
+    playCry(url);
+  });
+  // Start music on first user interaction
+  document.addEventListener('click', () => {
+    if (!state.muted && !chiptuneNodes.length) startChiptune();
+  }, { once: true });
+}
+
+/* ═══════════════════════════════════════════════════
+   POKÉBALL — positioned over artwork
+   ═══════════════════════════════════════════════════ */
+function pbPos() {
+  const wrap = $('artworkWrap');
+  if (!wrap) return { x: window.innerWidth/2, y: window.innerHeight/2, size: 120 };
+  const r = wrap.getBoundingClientRect();
+  return {
+    x: r.left + r.width / 2,
+    y: r.top  + r.height / 2,
+    size: Math.min(r.width * .72, 140),
+  };
+}
+
+function positionBall() {
+  const ball  = $('pbBall');
+  const flash = $('pbFlash');
+  const { x, y, size } = pbPos();
+  ball.style.width  = size + 'px';
+  ball.style.height = size + 'px';
+  ball.style.left   = x + 'px';
+  ball.style.top    = y + 'px';
+  flash.style.left  = x + 'px';
+  flash.style.top   = y + 'px';
+}
+
+/* Particles from artwork position */
+function spawnParticles(color, mode) {
+  const canvas = $('pbCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const { x: cx, y: cy } = pbPos();
+  const count = mode === 'release' ? 32 : 20;
+  const particles = Array.from({ length: count }, (_, i) => {
+    const angle = (Math.PI * 2 / count) * i + (Math.random() - .5) * .5;
+    const dist  = mode === 'capture' ? 70 + Math.random() * 50 : 8;
+    const speed = mode === 'capture' ? -(1.5 + Math.random() * 3) : (3 + Math.random() * 6);
+    return {
+      x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      size: 2.5 + Math.random() * 4, alpha: 1, color,
+    };
+  });
+  let frame;
+  (function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= .9; p.vy *= .9; p.alpha -= .034;
+      if (p.alpha > 0) {
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    });
+    if (alive) frame = requestAnimationFrame(tick);
+  })();
+}
+
+async function animateCapture(accentColor) {
+  positionBall();
+  const ball  = $('pbBall');
+  const core  = $('pbCore');
+  const flash = $('pbFlash');
+  const art   = $('pokeArtwork');
+  const name  = $('pokeName');
+  const genus = $('pokeGenus');
+
+  $('pb-overlay').classList.add('pb-active');
+
+  // Name fades, ball appears
+  name.style.transition  = 'opacity .3s ease, transform .3s ease';
+  genus.style.transition = 'opacity .25s ease';
+  name.style.opacity  = '0'; name.style.transform = 'translateY(-6px)';
+  genus.style.opacity = '0';
+  ball.classList.add('pb-open');
+  await delay(60);
+  ball.classList.add('pb-visible');
+
+  // Artwork shrinks into ball
+  spawnParticles(accentColor, 'capture');
+  art.style.transition = 'transform .35s cubic-bezier(.55,.06,.68,.19), opacity .35s, filter .35s';
+  art.style.transform  = 'scale(0.04)';
+  art.style.opacity    = '0';
+  art.style.filter     = `brightness(3) drop-shadow(0 0 20px ${accentColor})`;
+  await delay(320);
+
+  // Flash + close
+  flash.style.background = `radial-gradient(circle, #fff 0%, ${accentColor} 60%, transparent 100%)`;
+  flash.classList.add('pb-flash--on');
+  await delay(70);
+  flash.classList.remove('pb-flash--on');
+
+  ball.classList.remove('pb-open');
+  core.style.background = accentColor;
+  core.style.boxShadow  = `0 0 12px 4px ${accentColor}88`;
+  await delay(180);
+
+  // Two shakes (shorter than before)
+  for (let i = 0; i < 2; i++) {
+    ball.classList.add('pb-shake');
+    await delay(460);
+    ball.classList.remove('pb-shake');
+    await delay(200);
+  }
+}
+
+async function animateRelease(accentColor) {
+  const ball  = $('pbBall');
+  const flash = $('pbFlash');
+  const core  = $('pbCore');
+  const art   = $('pokeArtwork');
+  const name  = $('pokeName');
+  const genus = $('pokeGenus');
+
+  positionBall();
+
+  // Core brightens
+  core.style.transition = 'all .15s ease';
+  core.style.background = '#fff';
+  core.style.boxShadow  = '0 0 20px 8px #fff';
+  await delay(150);
+
+  // Burst
+  ball.classList.add('pb-burst');
+  flash.style.background = `radial-gradient(circle, #fff 0%, ${accentColor} 50%, transparent 80%)`;
+  flash.classList.add('pb-flash--on');
+  spawnParticles(accentColor, 'release');
+  await delay(140);
+  flash.classList.remove('pb-flash--on');
+
+  // Artwork grows out
+  art.style.transition = 'none';
+  art.style.transform  = 'scale(0.04)';
+  art.style.opacity    = '0';
+  art.style.filter     = '';
+  await delay(30);
+  art.style.transition = 'transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease';
+  art.style.transform  = 'scale(1)';
+  art.style.opacity    = '1';
+
+  // Name rises in
+  await delay(80);
+  name.style.transform   = 'translateY(0)';
+  name.style.opacity     = '1';
+  genus.style.opacity    = '1';
+
+  // Ball fades out
+  await delay(160);
+  ball.classList.add('pb-outro');
+  await delay(320);
+
+  ball.className = 'pb-ball';
+  core.style.cssText = '';
+  $('pb-overlay').classList.remove('pb-active');
+}
+
+/* ═══════════════════════════════════════════════════
+   API
+   ═══════════════════════════════════════════════════ */
+async function fetchPokemon(q) {
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${String(q).toLowerCase().trim()}`);
+  if (!res.ok) throw new Error('Not found');
+  return res.json();
+}
+async function fetchSpecies(url) {
+  try { const r = await fetch(url); return r.ok ? r.json() : null; } catch { return null; }
+}
+
+/* ═══════════════════════════════════════════════════
+   RECENTS
+   ═══════════════════════════════════════════════════ */
+function addToRecents(name, id) {
+  state.recents = state.recents.filter(r => r.name !== name);
+  state.recents.unshift({ name, id });
+  if (state.recents.length > 10) state.recents = state.recents.slice(0, 10);
+  localStorage.setItem('pd_recents', JSON.stringify(state.recents));
+  renderRecents();
+}
+function renderRecents() {
+  const el = $('recents');
+  if (!state.recents.length) { el.innerHTML = ''; return; }
+  el.innerHTML = state.recents.map(r => `
+    <button class="recent-chip" data-name="${r.name}">
+      <span class="recent-chip-num">${padId(r.id)}</span> ${capitalize(r.name)}
+    </button>`).join('');
+  el.querySelectorAll('.recent-chip').forEach(c =>
+    c.addEventListener('click', () => loadPokemon(c.dataset.name)));
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDER
    ═══════════════════════════════════════════════════ */
 function renderPokemon(data, species) {
-  const artwork = data.sprites?.other?.['official-artwork']?.front_default
-    || data.sprites?.front_default || '';
-  const types = data.types.map(t => t.type.name);
+  const types       = data.types.map(t => t.type.name);
   const primaryType = types[0];
 
-  let flavorText = '';
+  // Artwork — normal or shiny
+  const sprites  = data.sprites?.other?.['official-artwork'];
+  const artNormal = sprites?.front_default || data.sprites?.front_default || '';
+  const artShiny  = sprites?.front_shiny  || data.sprites?.front_shiny  || artNormal;
+
+  // Animated sprite (gen-v)
+  const animSprite = data.sprites?.versions?.['generation-v']?.['black-white']?.animated?.front_default || '';
+
+  state.isShiny = false;
+  const shinyBtn = $('shinyBtn');
+  shinyBtn.classList.remove('active');
+  shinyBtn.onclick = () => {
+    state.isShiny = !state.isShiny;
+    shinyBtn.classList.toggle('active', state.isShiny);
+    const artEl = $('pokeArtwork');
+    artEl.style.opacity = '0';
+    setTimeout(() => {
+      artEl.src = state.isShiny ? artShiny : artNormal;
+      artEl.style.transition = 'opacity .3s ease';
+      artEl.style.opacity = '1';
+    }, 150);
+  };
+
+  // Animated sprite badge
+  const badge    = $('spriteBadge');
+  const animEl   = $('spriteAnim');
+  if (animSprite) {
+    animEl.src = animSprite;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+
+  applyTypeTheme(primaryType);
+
+  $('pokeNumber').textContent = padId(data.id);
+
+  // Flavor text
+  let flavor = '';
   if (species) {
     const entry = species.flavor_text_entries?.find(e => e.language.name === 'en');
-    if (entry) flavorText = entry.flavor_text.replace(/\f|\n/g, ' ').trim();
+    if (entry) flavor = entry.flavor_text.replace(/\f|\n/g, ' ').trim();
   }
   let genus = '';
   if (species) {
-    const gen = species.genera?.find(g => g.language.name === 'en');
-    if (gen) genus = gen.genus;
+    const g = species.genera?.find(g => g.language.name === 'en');
+    if (g) genus = g.genus;
   }
 
-  applyTheme(primaryType);
-  $('pokeNumber').textContent = padId(data.id);
-
-  const artEl = $('pokeArtwork');
-  artEl.style.opacity = '0';
-  artEl.src = artwork;
-  artEl.alt = data.name;
-  artEl.onload = () => {
-    artEl.style.transition = 'opacity .35s ease';
-    artEl.style.opacity = '1';
-  };
+  $('pokeName').textContent  = data.name;
+  $('pokeGenus').textContent = genus;
+  $('pokeFlavor').textContent = flavor || 'No entry found.';
+  $('pokeHeight').textContent = formatHeight(data.height);
+  $('pokeWeight').textContent = formatWeight(data.weight);
+  $('pokeExp').textContent    = data.base_experience ?? '—';
 
   $('pokeTypes').innerHTML = types.map(t => {
     const c = TYPE_COLORS[t] || TYPE_COLORS.normal;
     return `<span class="type-badge" style="background:${c.hex}">${t}</span>`;
   }).join('');
 
-  $('pokeName').textContent = data.name;
-  $('pokeGenus').textContent = genus || '';
-  $('pokeFlavor').textContent = flavorText || 'No entry found.';
-  $('pokeHeight').textContent = formatHeight(data.height);
-  $('pokeWeight').textContent = formatWeight(data.weight);
-  $('pokeExp').textContent = data.base_experience ?? '—';
-
   $('pokeAbilities').innerHTML = data.abilities.map(a => `
     <span class="ability-tag${a.is_hidden ? ' hidden-ability' : ''}">
       ${capitalize(a.ability.name)}${a.is_hidden ? ' ✦' : ''}
-    </span>
-  `).join('');
+    </span>`).join('');
 
   $('pokeStats').innerHTML = data.stats.map(s => {
     const label = STAT_LABELS[s.stat.name] || s.stat.name;
-    const val = s.base_stat;
-    const pct = Math.min((val / STAT_MAX) * 100, 100);
+    const pct   = Math.min((s.base_stat / STAT_MAX) * 100, 100);
     return `
       <div class="stat-row">
         <span class="stat-name">${label}</span>
-        <span class="stat-val">${val}</span>
+        <span class="stat-val">${s.base_stat}</span>
         <div class="stat-bar-wrap"><div class="stat-bar" data-pct="${pct}"></div></div>
       </div>`;
   }).join('');
@@ -389,76 +492,83 @@ function renderPokemon(data, species) {
 }
 
 /* ═══════════════════════════════════════════════════
-   MAIN LOAD (sin cambios en lógica)
+   LOAD
    ═══════════════════════════════════════════════════ */
 async function loadPokemon(nameOrId) {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  const currentType = state.current?.types?.[0]?.type?.name || 'normal';
+  const currentType   = state.currentData?.types?.[0]?.type?.name || 'normal';
   const currentAccent = TYPE_COLORS[currentType]?.hex || '#9e9e9e';
-  const isFirst = state.isFirstLoad;
-  state.isFirstLoad = false;
+  const isFirst       = state.isFirstLoad;
+  state.isFirstLoad   = false;
 
   try {
     if (isFirst) {
-      hide($('welcomeState'));
-      hide($('errorState'));
+      hide($('welcomeState')); hide($('errorState'));
       show($('loadingState'));
-
       const data = await fetchPokemon(nameOrId);
       let species = null;
       if (data.species?.url) species = await fetchSpecies(data.species.url);
-
       hide($('loadingState'));
+
+      // Reset artwork styles
+      const art = $('pokeArtwork');
+      art.style.cssText = '';
+      art.src = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+      art.onload = () => { art.style.opacity = '1'; };
+      art.style.opacity = '0';
+      art.style.transition = 'opacity .4s ease';
+
       renderPokemon(data, species);
       show($('pokeCard'));
       addToRecents(data.name, data.id);
-      state.current = data;
+      state.currentData = data;
       $('searchInput').value = capitalize(data.name);
 
-    } else {
-      buildOverlay();
+      // Auto-play cry on first load
+      setTimeout(() => playCry(data.cries?.latest), 600);
 
-      // 1. Capture current Pokémon into ball (acortado)
+    } else {
+      // Capture animation
       await animateCapture(currentAccent);
 
-      // 2. Fetch new data while ball shakes (tiempo reducido)
-      const [data] = await Promise.all([
-        fetchPokemon(nameOrId),
-        delay(150), // Reducido de 300ms
-      ]);
+      const [data] = await Promise.all([fetchPokemon(nameOrId), delay(150)]);
       let species = null;
       if (data.species?.url) species = await fetchSpecies(data.species.url);
 
-      const newType = data.types?.[0]?.type?.name || 'normal';
+      const newType   = data.types?.[0]?.type?.name || 'normal';
       const newAccent = TYPE_COLORS[newType]?.hex || '#9e9e9e';
 
-      // 3. Render behind overlay
-      hide($('welcomeState'));
-      hide($('errorState'));
+      // Set artwork src while hidden
+      const art = $('pokeArtwork');
+      const artUrl = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+      art.src = artUrl;
+
+      hide($('welcomeState')); hide($('errorState'));
       renderPokemon(data, species);
       show($('pokeCard'));
 
-      // 4. Open ball — Pokémon bursts out (acortado)
+      // Keep hidden for release
+      $('pokeName').style.opacity  = '0';
+      $('pokeGenus').style.opacity = '0';
+      art.style.transform = 'scale(0.04)';
+      art.style.opacity   = '0';
+
       await animateRelease(newAccent);
 
-      // 5. Card entrance animation
-      const card = $('pokeCard');
-      card.classList.remove('active');
-      void card.offsetWidth;
-      card.classList.add('active');
-
       addToRecents(data.name, data.id);
-      state.current = data;
+      state.currentData = data;
       $('searchInput').value = capitalize(data.name);
+
+      // Play cry
+      playCry(data.cries?.latest);
     }
 
-  } catch (err) {
-    const overlay = $('pb-overlay');
-    if (overlay?.classList.contains('pb-show')) {
-      overlay.classList.remove('pb-show');
-      await delay(180); // Reducido de 350ms
-    }
+  } catch {
+    const ball = $('pbBall');
+    if (ball) { ball.className = 'pb-ball'; }
+    $('pb-overlay').classList.remove('pb-active');
+    const art = $('pokeArtwork');
+    if (art) { art.style.cssText = ''; }
+    [$('pokeName'), $('pokeGenus')].forEach(el => { if (el) el.style.cssText = ''; });
     hide($('loadingState'));
     $('errorMsg').textContent = `"${nameOrId}" was not found. Check the name or number.`;
     show($('errorState'));
@@ -466,15 +576,14 @@ async function loadPokemon(nameOrId) {
 }
 
 async function loadRandom() {
-  const id = Math.floor(Math.random() * 1025) + 1;
-  await loadPokemon(id);
+  await loadPokemon(Math.floor(Math.random() * 1025) + 1);
 }
 
 /* ═══════════════════════════════════════════════════
-   INIT (sin cambios)
+   INIT
    ═══════════════════════════════════════════════════ */
 function initSearch() {
-  const form = $('searchForm');
+  const form  = $('searchForm');
   const input = $('searchInput');
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -488,21 +597,26 @@ function initSearch() {
 }
 
 function initStarters() {
-  document.querySelectorAll('.starter-chip').forEach(chip => {
-    chip.addEventListener('click', () => loadPokemon(chip.dataset.name));
-  });
+  document.querySelectorAll('.starter-chip').forEach(c =>
+    c.addEventListener('click', () => loadPokemon(c.dataset.name)));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  show($('welcomeState'));
+  initTheme();
+  initSound();
   initSearch();
   initStarters();
   renderRecents();
   $('btnRandom').addEventListener('click', loadRandom);
 
-  if (!state.recents.length) {
-    setTimeout(() => loadPokemon('ditto'), 600);
-  } else {
-    loadPokemon(state.recents[0].name);
-  }
+  // Compute header height for CSS var
+  const setHeaderH = () => {
+    document.documentElement.style.setProperty('--header-h', $('header')?.offsetHeight + 'px' || '104px');
+  };
+  setHeaderH();
+  window.addEventListener('resize', setHeaderH);
+
+  show($('welcomeState'));
+  if (!state.recents.length) setTimeout(() => loadPokemon('pikachu'), 500);
+  else loadPokemon(state.recents[0].name);
 });
