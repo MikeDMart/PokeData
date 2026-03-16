@@ -1,0 +1,56 @@
+# Android / Bubblewrap (build outputs, keystores)
+android/android.keystore
+android/*.keystore
+android/keystore-password.txt
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/app/debug/
+*.apk
+*.aab
+*.keystore
+
+# Node.js (si alguna vez usás npm)
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Gradle wrapper (si lo usás)
+android/gradle/
+android/gradlew
+android/gradlew.bat
